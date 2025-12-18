@@ -251,11 +251,47 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] === Application Submission Started ===")
+
     const data: ApplicationData = await request.json()
+    console.log("[v0] Received application data:", {
+      name: data.fullName,
+      email: data.email,
+      technologies: data.technologies,
+    })
+
+    const requiredEnvVars = {
+      GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
+      GOOGLE_PRIVATE_KEY_ID: process.env.GOOGLE_PRIVATE_KEY_ID,
+      GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
+      GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+    }
+
+    const missingVars = Object.entries(requiredEnvVars)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key)
+
+    if (missingVars.length > 0) {
+      console.error("[v0] Missing environment variables:", missingVars)
+      return NextResponse.json(
+        {
+          error: "Server configuration error. Missing environment variables.",
+          details: missingVars,
+        },
+        { status: 500 },
+      )
+    }
+
+    console.log("[v0] Environment variables validated")
 
     // Calculate score and status
     const score = calculateScore(data)
     const status = getStatus(data, score)
+
+    console.log("[v0] Calculated score:", score)
+    console.log("[v0] Determined status:", status)
 
     // Prepare row data
     const timestamp = new Date().toISOString()
@@ -289,14 +325,6 @@ export async function POST(request: NextRequest) {
       status,
     }
 
-    console.log("[v0] Application received:", {
-      name: data.fullName,
-      email: data.email,
-      technologies: data.technologies,
-      score,
-      status,
-    })
-
     // Prepare sheets routing
     const sheetsToUpdate = ["All_Applications"]
 
@@ -309,39 +337,62 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log("[v0] Would update these sheets:", sheetsToUpdate)
-    console.log("[v0] Row data:", rowData)
+    console.log("[v0] Sheets to update:", sheetsToUpdate)
 
-    const sheetId = process.env.GOOGLE_SHEET_ID
+    const sheetId = process.env.GOOGLE_SHEET_ID!
 
-    if (!sheetId) {
-      console.error("[v0] GOOGLE_SHEET_ID environment variable not set")
-      return NextResponse.json({ error: "Server configuration error. Please contact support." }, { status: 500 })
-    }
+    try {
+      console.log("[v0] Creating Google Sheets client...")
+      const sheets = await getGoogleSheetsClient()
+      console.log("[v0] Google Sheets client created successfully")
 
-    const sheets = await getGoogleSheetsClient()
-    await ensureSheetsExist(sheets, sheetId, sheetsToUpdate)
+      console.log("[v0] Ensuring sheets exist...")
+      await ensureSheetsExist(sheets, sheetId, sheetsToUpdate)
+      console.log("[v0] Sheets verified/created")
 
-    // Append to all relevant sheets
-    for (const sheetName of sheetsToUpdate) {
-      try {
-        await appendToGoogleSheets(sheetId, sheetName, rowData)
-        console.log(`[v0] Successfully added to sheet: ${sheetName}`)
-      } catch (error) {
-        console.error(`[v0] Error writing to sheet ${sheetName}:`, error)
-        // Continue with other sheets even if one fails
+      // Append to all relevant sheets
+      for (const sheetName of sheetsToUpdate) {
+        try {
+          console.log(`[v0] Appending to sheet: ${sheetName}`)
+          await appendToGoogleSheets(sheetId, sheetName, rowData)
+          console.log(`[v0] ✓ Successfully added to sheet: ${sheetName}`)
+        } catch (error) {
+          console.error(`[v0] ✗ Error writing to sheet ${sheetName}:`, error)
+          // Continue with other sheets even if one fails
+        }
       }
-    }
 
-    return NextResponse.json({
-      success: true,
-      message: `Thank you ${data.fullName}! Your application has been received and is ${status.toLowerCase()}.`,
-      score,
-      status,
-      sheetsUpdated: sheetsToUpdate,
-    })
+      console.log("[v0] === Application Submission Completed ===")
+
+      return NextResponse.json({
+        success: true,
+        message: `Thank you ${data.fullName}! Your application has been received and is ${status.toLowerCase()}.`,
+        score,
+        status,
+        sheetsUpdated: sheetsToUpdate,
+      })
+    } catch (sheetsError) {
+      console.error("[v0] Google Sheets API Error:", sheetsError)
+
+      return NextResponse.json(
+        {
+          error: "Failed to write to Google Sheets",
+          details: sheetsError instanceof Error ? sheetsError.message : "Unknown error",
+          hint: "Check if the sheet is shared with the service account email",
+        },
+        { status: 500 },
+      )
+    }
   } catch (error) {
-    console.error("[v0] Error processing application:", error)
-    return NextResponse.json({ error: "Failed to process application. Please try again." }, { status: 500 })
+    console.error("[v0] Fatal error processing application:", error)
+
+    return NextResponse.json(
+      {
+        error: "Failed to process application",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      { status: 500 },
+    )
   }
 }

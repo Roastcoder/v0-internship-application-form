@@ -122,6 +122,9 @@ export default function InternshipApplicationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log("[v0] Form submission started")
+    console.log("[v0] Form data:", formData)
+
     // Validation
     if (formData.technologies.length === 0) {
       toast({
@@ -153,6 +156,8 @@ export default function InternshipApplicationForm() {
     setIsSubmitting(true)
 
     try {
+      console.log("[v0] Sending request to /api/submit-application")
+
       const response = await fetch("/api/submit-application", {
         method: "POST",
         headers: {
@@ -161,7 +166,10 @@ export default function InternshipApplicationForm() {
         body: JSON.stringify(formData),
       })
 
+      console.log("[v0] Response status:", response.status)
+
       const result = await response.json()
+      console.log("[v0] Response data:", result)
 
       if (response.ok) {
         toast({
@@ -197,12 +205,14 @@ export default function InternshipApplicationForm() {
           readyToLearn: "",
         })
       } else {
+        console.error("[v0] Submission failed:", result)
         throw new Error(result.error || "Submission failed")
       }
     } catch (error) {
+      console.error("[v0] Submission error:", error)
       toast({
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Please try again later",
+        description: error instanceof Error ? error.message : "Please try again later. Check console for details.",
         variant: "destructive",
       })
     } finally {
