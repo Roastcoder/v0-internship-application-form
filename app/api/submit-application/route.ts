@@ -99,11 +99,14 @@ function getTechSheetName(tech: string): string {
 }
 
 async function getGoogleSheetsClient() {
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY
+  const formattedPrivateKey = privateKey?.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey
+
   const credentials = {
     type: "service_account",
     project_id: process.env.GOOGLE_PROJECT_ID,
     private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    private_key: formattedPrivateKey,
     client_email: process.env.GOOGLE_CLIENT_EMAIL,
     client_id: process.env.GOOGLE_CLIENT_ID,
     auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -113,6 +116,8 @@ async function getGoogleSheetsClient() {
       process.env.GOOGLE_CLIENT_EMAIL || "",
     )}`,
   }
+
+  console.log("[v0] Creating auth with client email:", process.env.GOOGLE_CLIENT_EMAIL)
 
   const auth = new google.auth.GoogleAuth({
     credentials,
@@ -284,7 +289,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] Environment variables validated")
+    console.log("[v0] All environment variables present")
+    console.log("[v0] Sheet ID:", process.env.GOOGLE_SHEET_ID)
 
     // Calculate score and status
     const score = calculateScore(data)
@@ -346,6 +352,41 @@ export async function POST(request: NextRequest) {
       const sheets = await getGoogleSheetsClient()
       console.log("[v0] Google Sheets client created successfully")
 
+      console.log("[v0] Testing connection to Google Sheet...")
+      try {
+        const testResponse = await sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+          fields: "properties.title",
+        })
+        console.log("[v0] ✓ Successfully connected to sheet:", testResponse.data.properties?.title)
+      } catch (testError: any) {
+        console.error("[v0] ✗ Failed to connect to sheet:", testError?.message)
+
+        if (testError?.code === 404) {
+          return NextResponse.json(
+            {
+              error: "Google Sheet not found",
+              details: "The sheet ID is invalid or the sheet has been deleted",
+              sheetId: sheetId,
+            },
+            { status: 404 },
+          )
+        }
+
+        if (testError?.code === 403) {
+          return NextResponse.json(
+            {
+              error: "Permission denied to access Google Sheet",
+              details: `Please share the sheet with: ${process.env.GOOGLE_CLIENT_EMAIL}`,
+              sheetId: sheetId,
+            },
+            { status: 403 },
+          )
+        }
+
+        throw testError
+      }
+
       console.log("[v0] Ensuring sheets exist...")
       await ensureSheetsExist(sheets, sheetId, sheetsToUpdate)
       console.log("[v0] Sheets verified/created")
@@ -356,8 +397,8 @@ export async function POST(request: NextRequest) {
           console.log(`[v0] Appending to sheet: ${sheetName}`)
           await appendToGoogleSheets(sheetId, sheetName, rowData)
           console.log(`[v0] ✓ Successfully added to sheet: ${sheetName}`)
-        } catch (error) {
-          console.error(`[v0] ✗ Error writing to sheet ${sheetName}:`, error)
+        } catch (error: any) {
+          console.error(`[v0] ✗ Error writing to sheet ${sheetName}:`, error?.message)
           // Continue with other sheets even if one fails
         }
       }
@@ -371,26 +412,28 @@ export async function POST(request: NextRequest) {
         status,
         sheetsUpdated: sheetsToUpdate,
       })
-    } catch (sheetsError) {
+    } catch (sheetsError: any) {
       console.error("[v0] Google Sheets API Error:", sheetsError)
+      console.error("[v0] Error code:", sheetsError?.code)
+      console.error("[v0] Error message:", sheetsError?.message)
 
       return NextResponse.json(
         {
           error: "Failed to write to Google Sheets",
-          details: sheetsError instanceof Error ? sheetsError.message : "Unknown error",
-          hint: "Check if the sheet is shared with the service account email",
+          details: sheetsError?.message || "Unknown error",
+          code: sheetsError?.code,
+          hint: "Check server logs for detailed error information",
         },
         { status: 500 },
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Fatal error processing application:", error)
 
     return NextResponse.json(
       {
         error: "Failed to process application",
-        details: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
+        details: error?.message || "Unknown error",
       },
       { status: 500 },
     )
