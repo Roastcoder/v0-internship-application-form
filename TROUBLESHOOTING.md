@@ -52,6 +52,20 @@ The API now tests the connection before attempting to write data. If you see a s
 - **404**: Sheet not found - verify the sheet ID
 - **401**: Authentication issue - check the service account credentials
 
+### Test Connection Endpoint
+
+To diagnose connection issues, visit the test endpoint:
+
+**Local:** `http://localhost:3000/api/test-sheets`  
+**Production:** `https://your-domain.vercel.app/api/test-sheets`
+
+This will show you:
+- Which environment variables are set
+- Whether authentication is working
+- If the sheet is accessible
+- Current sheet title and existing tabs
+- Specific error messages with solutions
+
 ### Quick Checklist
 
 - [ ] Sheet is shared with `internship-progam@finonest-salew.iam.gserviceaccount.com`
