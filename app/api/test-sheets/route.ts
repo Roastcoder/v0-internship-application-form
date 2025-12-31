@@ -39,9 +39,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Format private key
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
-    const formattedPrivateKey = privateKey?.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey
+    let formattedPrivateKey = privateKey?.trim() || ""
+
+    if (formattedPrivateKey.startsWith('"') && formattedPrivateKey.endsWith('"')) {
+      formattedPrivateKey = formattedPrivateKey.slice(1, -1)
+    }
+
+    formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, "\n")
 
     console.log("[v0] Private key format check:")
     console.log("[v0] - Contains \\n:", privateKey?.includes("\\n"))

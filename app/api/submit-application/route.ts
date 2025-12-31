@@ -105,7 +105,13 @@ function getTechSheetName(tech: string): string {
 
 async function getGoogleSheetsClient() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY
-  const formattedPrivateKey = privateKey?.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey
+  let formattedPrivateKey = privateKey?.trim() || ""
+
+  if (formattedPrivateKey.startsWith('"') && formattedPrivateKey.endsWith('"')) {
+    formattedPrivateKey = formattedPrivateKey.slice(1, -1)
+  }
+
+  formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, "\n")
 
   const credentials = {
     type: "service_account",
@@ -259,7 +265,6 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
     const filterRequests: any[] = []
 
     for (const sheetName of sheetNames) {
-      // Check if headers exist by trying to read A1
       const headerCheck = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: `${sheetName}!A1:A1`,
@@ -276,7 +281,6 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
           },
         })
 
-        // Add auto-filter request
         const sheet = allSheets.find((s: any) => s.properties.title === sheetName)
         if (sheet) {
           filterRequests.push({

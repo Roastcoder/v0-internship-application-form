@@ -4,7 +4,7 @@ import Image from "next/image"
 export default function WorkFromHomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 md:py-12">
+      <div className="container mx-auto">
         <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
           <div className="relative w-64 h-20 md:w-80 md:h-24 mb-4">
             <Image
