@@ -229,6 +229,23 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
       "Mobile",
       "City",
       "State",
+      "College",
+      "Degree",
+      "Father's Name",
+      "Father's Occupation",
+      "Native Place",
+      "Vehicle",
+    ]
+
+    // For internship sheets, use full headers
+    const internshipHeaders = [
+      "Timestamp",
+      "Type",
+      "Full Name",
+      "Email",
+      "Mobile",
+      "City",
+      "State",
       "College/Location",
       "Year/Education",
       "Degree",
@@ -271,27 +288,32 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
       })
 
       if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
+        // Use appropriate headers based on sheet type
+        const sheetHeaders = sheetName === "WFH_Applications" ? headers : internshipHeaders
+        const range = sheetName === "WFH_Applications" ? `${sheetName}!A1:M1` : `${sheetName}!A1:AF1`
+        
         // Add headers
         await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
-          range: `${sheetName}!A1:AF1`,
+          range: range,
           valueInputOption: "RAW",
           requestBody: {
-            values: [headers],
+            values: [sheetHeaders],
           },
         })
 
         const sheet = allSheets.find((s: any) => s.properties.title === sheetName)
         if (sheet) {
+          const sheetHeaders = sheetName === "WFH_Applications" ? headers : internshipHeaders
           filterRequests.push({
             setBasicFilter: {
               filter: {
                 range: {
                   sheetId: sheet.properties.sheetId,
                   startRowIndex: 0,
-                  endRowIndex: 1, // Filtering the header row
+                  endRowIndex: 1,
                   startColumnIndex: 0,
-                  endColumnIndex: headers.length,
+                  endColumnIndex: sheetHeaders.length,
                 },
               },
             },
@@ -323,9 +345,49 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Received application data:", {
       name: data.fullName,
       email: data.email,
-      technologies: data.technologies,
+      type: data.applicationType,
     })
 
+    // Handle WFH applications with simplified logic
+    if (data.applicationType === "Work From Home") {
+      const timestamp = new Date().toISOString()
+      const wfhRowData = [
+        timestamp,
+        data.applicationType,
+        data.fullName,
+        data.email,
+        data.mobile,
+        data.city,
+        data.state,
+        data.college,
+        data.degree,
+        data.fatherName || "-",
+        data.fatherOccupation || "-",
+        data.nativePlace || "-",
+        data.personalVehicle || "-",
+      ]
+
+      const sheetId = process.env.GOOGLE_SHEET_ID!
+      const sheets = await getGoogleSheetsClient()
+      
+      // Ensure WFH_Applications sheet exists
+      await ensureSheetsExist(sheets, sheetId, ["WFH_Applications"])
+      
+      // Add to WFH sheet
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId,
+        range: "WFH_Applications!A:M",
+        valueInputOption: "RAW",
+        requestBody: { values: [wfhRowData] },
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: `Thank you ${data.fullName}! Your work from home application has been received.`,
+      })
+    }
+
+    // Continue with internship logic
     const requiredEnvVars = {
       GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
       GOOGLE_PRIVATE_KEY_ID: process.env.GOOGLE_PRIVATE_KEY_ID,
