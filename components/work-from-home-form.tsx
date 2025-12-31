@@ -56,7 +56,7 @@ export default function WorkFromHomeForm() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/submit-application", {
+      const response = await fetch("/api/submit-wfh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
