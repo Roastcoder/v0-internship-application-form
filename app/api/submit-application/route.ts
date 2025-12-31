@@ -389,10 +389,10 @@ export async function POST(request: NextRequest) {
       duration: data.duration || "-",
       whySelectYou: data.whySelectYou || "-",
       readyToLearn: data.readyToLearn || "-",
-      fatherName: data.fatherName,
-      fatherOccupation: data.fatherOccupation,
-      nativePlace: data.nativePlace,
-      personalVehicle: data.personalVehicle,
+      fatherName: data.fatherName || "-",
+      fatherOccupation: data.fatherOccupation || "-",
+      nativePlace: data.nativePlace || "-",
+      personalVehicle: data.personalVehicle || "-",
       score,
       status,
     }
@@ -407,9 +407,11 @@ export async function POST(request: NextRequest) {
       if (status === "Rejected") {
         sheetsToUpdate.push("Rejected")
       } else {
-        data.technologies.forEach((tech) => {
-          sheetsToUpdate.push(getTechSheetName(tech))
-        })
+        if (data.technologies && Array.isArray(data.technologies)) {
+          data.technologies.forEach((tech) => {
+            sheetsToUpdate.push(getTechSheetName(tech))
+          })
+        }
       }
     }
 
