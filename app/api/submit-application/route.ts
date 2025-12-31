@@ -189,34 +189,32 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
       spreadsheetId: sheetId,
     })
 
-    const existingSheets = response.data.sheets?.map((sheet: any) => sheet.properties.title) || []
+    const existingSheetsResponse = response.data.sheets || []
+    const existingSheets = existingSheetsResponse.map((sheet: any) => sheet.properties.title) || []
 
     // Find missing sheets
     const missingSheets = sheetNames.filter((name) => !existingSheets.includes(name))
 
-    if (missingSheets.length === 0) {
-      return
+    if (missingSheets.length > 0) {
+      // Create missing sheets
+      const requests = missingSheets.map((sheetName) => ({
+        addSheet: {
+          properties: {
+            title: sheetName,
+          },
+        },
+      }))
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: {
+          requests,
+        },
+      })
+
+      console.log(`[v0] Created missing sheets: ${missingSheets.join(", ")}`)
     }
 
-    // Create missing sheets with headers
-    const requests = missingSheets.map((sheetName) => ({
-      addSheet: {
-        properties: {
-          title: sheetName,
-        },
-      },
-    }))
-
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId,
-      requestBody: {
-        requests,
-      },
-    })
-
-    console.log(`[v0] Created missing sheets: ${missingSheets.join(", ")}`)
-
-    // Add headers to new sheets
     const headers = [
       "Timestamp",
       "Type",
@@ -252,18 +250,61 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
       "Status",
     ]
 
-    for (const sheetName of missingSheets) {
-      await sheets.spreadsheets.values.update({
+    // Fetch updated sheet list to get sheet IDs for filtering
+    const updatedResponse = await sheets.spreadsheets.get({
+      spreadsheetId: sheetId,
+    })
+    const allSheets = updatedResponse.data.sheets || []
+
+    const filterRequests: any[] = []
+
+    for (const sheetName of sheetNames) {
+      // Check if headers exist by trying to read A1
+      const headerCheck = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${sheetName}!A1:AF1`, // Extended range
-        valueInputOption: "RAW",
-        requestBody: {
-          values: [headers],
-        },
+        range: `${sheetName}!A1:A1`,
       })
+
+      if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
+        // Add headers
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${sheetName}!A1:AF1`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [headers],
+          },
+        })
+
+        // Add auto-filter request
+        const sheet = allSheets.find((s: any) => s.properties.title === sheetName)
+        if (sheet) {
+          filterRequests.push({
+            setBasicFilter: {
+              filter: {
+                range: {
+                  sheetId: sheet.properties.sheetId,
+                  startRowIndex: 0,
+                  endRowIndex: 1, // Filtering the header row
+                  startColumnIndex: 0,
+                  endColumnIndex: headers.length,
+                },
+              },
+            },
+          })
+        }
+      }
     }
 
-    console.log("[v0] Added headers to new sheets")
+    if (filterRequests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: {
+          requests: filterRequests,
+        },
+      })
+      console.log("[v0] Added headers and auto-filters to sheets")
+    }
   } catch (error) {
     console.error("[v0] Error creating sheets:", error)
     throw error

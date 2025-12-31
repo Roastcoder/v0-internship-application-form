@@ -1,8 +1,5 @@
 import InternshipForm from "@/components/internship-form"
 import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
 
 export default function InternshipPage() {
   return (
@@ -26,12 +23,6 @@ export default function InternshipPage() {
               Join our team and gain hands-on experience with real-world projects
             </p>
           </div>
-          <Button asChild variant="ghost" className="mt-4">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
         </div>
 
         <InternshipForm />

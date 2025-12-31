@@ -1,8 +1,5 @@
 import WorkFromHomeForm from "@/components/work-from-home-form"
 import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
 
 export default function WorkFromHomePage() {
   return (
@@ -26,12 +23,7 @@ export default function WorkFromHomePage() {
               Join our freelance team and work on projects remotely
             </p>
           </div>
-          <Button asChild variant="ghost" className="mt-4">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
+          {/* Removed the "Back to Home" button */}
         </div>
 
         <WorkFromHomeForm />
