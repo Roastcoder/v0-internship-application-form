@@ -26,6 +26,11 @@ interface ApplicationData {
   duration: string
   whySelectYou: string
   readyToLearn: string
+  applicationType: "Internship" | "Work From Home"
+  fatherName?: string
+  fatherOccupation?: string
+  nativePlace?: string
+  personalVehicle?: string
 }
 
 // Calculate application score (0-100)
@@ -134,6 +139,7 @@ async function appendToGoogleSheets(sheetId: string, sheetName: string, rowData:
   const values = [
     [
       rowData.timestamp,
+      rowData.applicationType, // Added type column
       rowData.fullName,
       rowData.email,
       rowData.mobile,
@@ -158,6 +164,11 @@ async function appendToGoogleSheets(sheetId: string, sheetName: string, rowData:
       rowData.duration,
       rowData.whySelectYou,
       rowData.readyToLearn,
+      // WFH Specific fields
+      rowData.fatherName || "-",
+      rowData.fatherOccupation || "-",
+      rowData.nativePlace || "-",
+      rowData.personalVehicle || "-",
       rowData.score,
       rowData.status,
     ],
@@ -165,7 +176,7 @@ async function appendToGoogleSheets(sheetId: string, sheetName: string, rowData:
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: sheetId,
-    range: `${sheetName}!A:AA`,
+    range: `${sheetName}!A:AF`, // Extended range
     valueInputOption: "RAW",
     requestBody: { values },
   })
@@ -208,13 +219,14 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
     // Add headers to new sheets
     const headers = [
       "Timestamp",
+      "Type",
       "Full Name",
       "Email",
       "Mobile",
       "City",
       "State",
-      "College",
-      "Current Year",
+      "College/Location",
+      "Year/Education",
       "Degree",
       "Specialization",
       "CGPA/Percentage",
@@ -232,6 +244,10 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
       "Duration",
       "Why Select You",
       "Ready To Learn",
+      "Father's Name",
+      "Father's Occupation",
+      "Native Place",
+      "Vehicle",
       "Score",
       "Status",
     ]
@@ -239,7 +255,7 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
     for (const sheetName of missingSheets) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: sheetId,
-        range: `${sheetName}!A1:AA1`,
+        range: `${sheetName}!A1:AF1`, // Extended range
         valueInputOption: "RAW",
         requestBody: {
           values: [headers],
@@ -303,6 +319,7 @@ export async function POST(request: NextRequest) {
     const timestamp = new Date().toISOString()
     const rowData = {
       timestamp,
+      applicationType: data.applicationType,
       fullName: data.fullName,
       email: data.email,
       mobile: data.mobile,
@@ -310,23 +327,27 @@ export async function POST(request: NextRequest) {
       state: data.state,
       college: data.college,
       currentYear: data.currentYear,
-      degree: data.degree,
-      specialization: data.specialization,
-      cgpaPercentage: data.cgpaPercentage,
-      passingYear: data.passingYear,
-      technologies: data.technologies.join(", "),
-      programmingLanguages: data.programmingLanguages.join(", "),
-      frameworks: data.frameworks,
-      database: data.database,
-      githubPortfolio: data.githubPortfolio,
-      hasProjects: data.hasProjects,
-      hasInternship: data.hasInternship,
-      experienceDuration: data.experienceDuration,
-      mode: data.mode,
-      hoursPerDay: data.hoursPerDay,
-      duration: data.duration,
-      whySelectYou: data.whySelectYou,
-      readyToLearn: data.readyToLearn,
+      degree: data.degree || "-",
+      specialization: data.specialization || "-",
+      cgpaPercentage: data.cgpaPercentage || "-",
+      passingYear: data.passingYear || "-",
+      technologies: data.technologies ? data.technologies.join(", ") : "-",
+      programmingLanguages: data.programmingLanguages ? data.programmingLanguages.join(", ") : "-",
+      frameworks: data.frameworks || "-",
+      database: data.database || "-",
+      githubPortfolio: data.githubPortfolio || "-",
+      hasProjects: data.hasProjects || "-",
+      hasInternship: data.hasInternship || "-",
+      experienceDuration: data.experienceDuration || "-",
+      mode: data.mode || "-",
+      hoursPerDay: data.hoursPerDay || "-",
+      duration: data.duration || "-",
+      whySelectYou: data.whySelectYou || "-",
+      readyToLearn: data.readyToLearn || "-",
+      fatherName: data.fatherName,
+      fatherOccupation: data.fatherOccupation,
+      nativePlace: data.nativePlace,
+      personalVehicle: data.personalVehicle,
       score,
       status,
     }
@@ -334,13 +355,17 @@ export async function POST(request: NextRequest) {
     // Prepare sheets routing
     const sheetsToUpdate = ["All_Applications"]
 
-    if (status === "Rejected") {
-      sheetsToUpdate.push("Rejected")
+    if (data.applicationType === "Work From Home") {
+      sheetsToUpdate.push("WFH_Freelancers")
     } else {
-      // Add to technology-specific sheets
-      data.technologies.forEach((tech) => {
-        sheetsToUpdate.push(getTechSheetName(tech))
-      })
+      // Internship logic
+      if (status === "Rejected") {
+        sheetsToUpdate.push("Rejected")
+      } else {
+        data.technologies.forEach((tech) => {
+          sheetsToUpdate.push(getTechSheetName(tech))
+        })
+      }
     }
 
     console.log("[v0] Sheets to update:", sheetsToUpdate)
