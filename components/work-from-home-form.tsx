@@ -50,13 +50,31 @@ export default function WorkFromHomeForm() {
 
     const payload = {
       ...formData,
-      applicationType: "Work From Home",
+      applicationType: "Work From Home" as const,
+      // Add required fields with default values for WFH
+      currentYear: "-",
+      specialization: "-",
+      cgpaPercentage: "-",
+      passingYear: "-",
+      technologies: [],
+      programmingLanguages: [],
+      frameworks: "-",
+      database: "-",
+      githubPortfolio: "-",
+      hasProjects: "-",
+      hasInternship: "-",
+      experienceDuration: "-",
+      mode: "-",
+      hoursPerDay: "-",
+      duration: "-",
+      whySelectYou: "-",
+      readyToLearn: "-",
     }
 
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/submit-wfh", {
+      const response = await fetch("/api/submit-application", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
