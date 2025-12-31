@@ -34,22 +34,22 @@ All sheets will be created with proper headers automatically.
 The service account credentials have been provided. You need to:
 
 1. Your Google Sheet ID is already configured:
-   ```
+   \`\`\`
    1cmBFGA6ZFoDGxtV-t5cJDCnyML5mHcGGe1tjwX6qn7s
-   ```
+   \`\`\`
    URL: https://docs.google.com/spreadsheets/d/1cmBFGA6ZFoDGxtV-t5cJDCnyML5mHcGGe1tjwX6qn7s/edit
 
 2. Share your Google Sheet with the service account email:
-   ```
+   \`\`\`
    internship-progam@finonest-salew.iam.gserviceaccount.com
-   ```
+   \`\`\`
    Give it **Editor** access.
 
 ### 3. Environment Variables
 
 Add these environment variables to your Vercel project (or .env.local for local development):
 
-```env
+\`\`\`env
 # Google Service Account Credentials
 GOOGLE_PROJECT_ID=finonest-salew
 GOOGLE_PRIVATE_KEY_ID=f605c5ad1ed912b7368f4a2bf75eb5ad9441946c
@@ -59,7 +59,7 @@ GOOGLE_CLIENT_ID=102026155687482474976
 
 # Your Google Sheet ID (already configured)
 GOOGLE_SHEET_ID=1cmBFGA6ZFoDGxtV-t5cJDCnyML5mHcGGe1tjwX6qn7s
-```
+\`\`\`
 
 **Important:** When adding `GOOGLE_PRIVATE_KEY` to Vercel:
 - Keep the quotes around the entire key

@@ -22,7 +22,7 @@ This guide will help you set up Google Sheets integration for the Finonest IT In
 
 ### Google Apps Script Code
 
-```javascript
+\`\`\`javascript
 /**
  * Google Apps Script for Finonest IT Internship Application
  * 
@@ -235,7 +235,7 @@ Trust Comes First
 function testInitialization() {
   initializeSheets()
 }
-```
+\`\`\`
 
 ## Step 3: Initialize Sheets
 
@@ -284,9 +284,9 @@ This will create all required sub-sheets with proper headers:
 ### Option B: For Local Development
 
 Create a `.env.local` file in your project root:
-```bash
+\`\`\`bash
 GOOGLE_SHEETS_WEBHOOK_URL=your-web-app-url-here
-```
+\`\`\`
 
 ### Option C: For Vercel Deployment
 
@@ -303,7 +303,7 @@ The API route at `app/api/submit-application/route.ts` is already configured to 
 
 To enable the actual webhook call, you can update the route to include:
 
-```typescript
+\`\`\`typescript
 // Add this code to the API route after calculating score and status
 if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
   try {
@@ -319,7 +319,7 @@ if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
     // Don't fail the whole request if sheets update fails
   }
 }
-```
+\`\`\`
 
 ## Auto-Routing Logic
 

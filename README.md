@@ -39,9 +39,9 @@ A smart, automated internship application form that filters students based on sk
 ## Quick Start
 
 ### 1. Install Dependencies
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 ### 2. Set Up Google Sheets
 Follow the comprehensive guide in `GOOGLE_SHEETS_SETUP.md` to:
@@ -51,14 +51,14 @@ Follow the comprehensive guide in `GOOGLE_SHEETS_SETUP.md` to:
 
 ### 3. Configure Environment Variables
 Add to your `.env.local` or Vercel environment variables:
-```
+\`\`\`
 GOOGLE_SHEETS_WEBHOOK_URL=your-webhook-url-here
-```
+\`\`\`
 
 ### 4. Run Development Server
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 Visit `http://localhost:3000` to see the form.
 
@@ -75,7 +75,7 @@ Visit `http://localhost:3000` to see the form.
 ## Auto-Routing Logic
 
 ### Google Sheets Structure
-```
+\`\`\`
 IT Internship Applications
 ├── All_Applications (Master backup)
 ├── Web_Development
@@ -87,7 +87,7 @@ IT Internship Applications
 ├── AI_ML
 ├── Cloud_DevOps
 └── Rejected
-```
+\`\`\`
 
 ### Routing Rules
 - ✅ Every application → **All_Applications**
@@ -107,7 +107,7 @@ Applications are automatically rejected if:
 
 ## File Structure
 
-```
+\`\`\`
 finonest-internship-app/
 ├── app/
 │   ├── api/
@@ -125,29 +125,29 @@ finonest-internship-app/
 │   └── finonest-logo.png          # Company logo
 ├── GOOGLE_SHEETS_SETUP.md         # Detailed setup guide
 └── README.md                      # This file
-```
+\`\`\`
 
 ## Customization
 
 ### Update Branding Colors
 Edit `app/globals.css` to change the color scheme:
-```css
+\`\`\`css
 :root {
   --primary: oklch(0.35 0.14 250);    /* Blue */
   --secondary: oklch(0.62 0.15 195);  /* Cyan */
   --accent: oklch(0.62 0.15 195);     /* Accent color */
 }
-```
+\`\`\`
 
 ### Modify Scoring Algorithm
 Edit `app/api/submit-application/route.ts`:
-```typescript
+\`\`\`typescript
 function calculateScore(data: ApplicationData): number {
   let score = 0
   // Add your custom scoring logic here
   return score
 }
-```
+\`\`\`
 
 ### Customize Email Template
 Edit the `sendConfirmationEmail` function in `scripts/google-sheets-setup.js`
@@ -155,13 +155,13 @@ Edit the `sendConfirmationEmail` function in `scripts/google-sheets-setup.js`
 ## Deployment
 
 ### Deploy to Vercel
-```bash
+\`\`\`bash
 # Install Vercel CLI
 npm i -g vercel
 
 # Deploy
 vercel
-```
+\`\`\`
 
 ### Add Environment Variables in Vercel
 1. Go to your project dashboard
