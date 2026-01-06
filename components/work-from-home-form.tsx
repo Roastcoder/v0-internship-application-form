@@ -301,41 +301,19 @@ export default function WorkFromHomeForm() {
         {/* Reference */}
         <Card>
           <CardHeader>
-            <CardTitle>How Did You Hear About Us?</CardTitle>
-            <CardDescription>Please tell us your source of reference</CardDescription>
+            <CardTitle>Referral Information</CardTitle>
+            <CardDescription>Who referred you to this opportunity?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <Label>Reference Source *</Label>
-              <RadioGroup
+            <div className="space-y-2">
+              <Label htmlFor="referenceSource">Name of Person Who Referred You *</Label>
+              <Input
+                id="referenceSource"
+                placeholder="Enter the name of the person who gave you this form link"
                 value={formData.referenceSource}
-                onValueChange={(value) => handleInputChange("referenceSource", value)}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="linkedin" id="ref-linkedin" />
-                  <Label htmlFor="ref-linkedin">LinkedIn</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="instagram" id="ref-instagram" />
-                  <Label htmlFor="ref-instagram">Instagram</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="facebook" id="ref-facebook" />
-                  <Label htmlFor="ref-facebook">Facebook</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="friend" id="ref-friend" />
-                  <Label htmlFor="ref-friend">Friend Referral</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="website" id="ref-website" />
-                  <Label htmlFor="ref-website">Company Website</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="ref-other" />
-                  <Label htmlFor="ref-other">Other</Label>
-                </div>
-              </RadioGroup>
+                onChange={(e) => handleInputChange("referenceSource", e.target.value)}
+                required
+              />
             </div>
           </CardContent>
         </Card>
