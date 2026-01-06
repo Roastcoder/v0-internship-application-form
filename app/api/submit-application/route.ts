@@ -222,6 +222,15 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
 
 async function initializeWFHSheet(sheets: any, sheetId: string) {
   try {
+    const sheetResponse = await sheets.spreadsheets.get({
+      spreadsheetId: sheetId,
+    })
+
+    const wfhSheet = sheetResponse.data.sheets?.find((sheet: any) => sheet.properties?.title === "WFH_Applications")
+    const wfhSheetId = wfhSheet?.properties?.sheetId
+
+    console.log("[v0] WFH sheet ID:", wfhSheetId)
+
     const headers = [
       [
         "Timestamp",
@@ -247,12 +256,11 @@ async function initializeWFHSheet(sheets: any, sheetId: string) {
       requestBody: { values: headers },
     })
 
-    // Apply auto-filter to header row
     const filterRequest = {
       setBasicFilter: {
         filter: {
           range: {
-            sheetId: 0,
+            sheetId: wfhSheetId,
             startRowIndex: 0,
             endRowIndex: 1,
             startColumnIndex: 0,
