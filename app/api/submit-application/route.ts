@@ -37,27 +37,22 @@ interface ApplicationData {
 function calculateScore(data: ApplicationData): number {
   let score = 0
 
-  // GitHub/Portfolio link → +20
   if (data.githubPortfolio) {
     score += 20
   }
 
-  // Real Project → +25
   if (data.hasProjects === "yes") {
     score += 25
   }
 
-  // Final Year / Passout → +15
   if (data.currentYear === "Final" || data.currentYear === "Passout") {
     score += 15
   }
 
-  // 4+ Hours availability → +20
   if (data.hoursPerDay === "4-6" || data.hoursPerDay === "Full-time") {
     score += 20
   }
 
-  // Internship experience → +20
   if (data.hasInternship === "yes") {
     score += 20
   }
@@ -67,7 +62,6 @@ function calculateScore(data: ApplicationData): number {
 
 // Determine application status
 function getStatus(data: ApplicationData, score: number): string {
-  // Auto-reject conditions
   if (data.programmingLanguages.length === 0) {
     return "Rejected"
   }
@@ -80,7 +74,6 @@ function getStatus(data: ApplicationData, score: number): string {
     return "Rejected"
   }
 
-  // Shortlist if score is high
   if (score >= 60) {
     return "Shortlisted"
   }
@@ -140,69 +133,70 @@ async function getGoogleSheetsClient() {
 }
 
 async function appendToGoogleSheets(sheetId: string, sheetName: string, rowData: any) {
-  const sheets = await getGoogleSheetsClient()
+  try {
+    const sheets = await getGoogleSheetsClient()
 
-  const values = [
-    [
-      rowData.timestamp,
-      rowData.applicationType, // Added type column
-      rowData.fullName,
-      rowData.email,
-      rowData.mobile,
-      rowData.city,
-      rowData.state,
-      rowData.college,
-      rowData.currentYear,
-      rowData.degree,
-      rowData.specialization,
-      rowData.cgpaPercentage,
-      rowData.passingYear,
-      rowData.technologies,
-      rowData.programmingLanguages,
-      rowData.frameworks,
-      rowData.database,
-      rowData.githubPortfolio,
-      rowData.hasProjects,
-      rowData.hasInternship,
-      rowData.experienceDuration,
-      rowData.mode,
-      rowData.hoursPerDay,
-      rowData.duration,
-      rowData.whySelectYou,
-      rowData.readyToLearn,
-      // WFH Specific fields
-      rowData.fatherName || "-",
-      rowData.fatherOccupation || "-",
-      rowData.nativePlace || "-",
-      rowData.personalVehicle || "-",
-      rowData.score,
-      rowData.status,
-    ],
-  ]
+    const values = [
+      [
+        rowData.timestamp,
+        rowData.applicationType,
+        rowData.fullName,
+        rowData.email,
+        rowData.mobile,
+        rowData.city,
+        rowData.state,
+        rowData.college,
+        rowData.currentYear,
+        rowData.degree,
+        rowData.specialization,
+        rowData.cgpaPercentage,
+        rowData.passingYear,
+        rowData.technologies,
+        rowData.programmingLanguages,
+        rowData.frameworks,
+        rowData.database,
+        rowData.githubPortfolio,
+        rowData.hasProjects,
+        rowData.hasInternship,
+        rowData.experienceDuration,
+        rowData.mode,
+        rowData.hoursPerDay,
+        rowData.duration,
+        rowData.whySelectYou,
+        rowData.readyToLearn,
+        rowData.fatherName || "-",
+        rowData.fatherOccupation || "-",
+        rowData.nativePlace || "-",
+        rowData.personalVehicle || "-",
+        rowData.score,
+        rowData.status,
+      ],
+    ]
 
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: sheetId,
-    range: `${sheetName}!A:AF`, // Extended range
-    valueInputOption: "RAW",
-    requestBody: { values },
-  })
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: `${sheetName}!A:AF`,
+      valueInputOption: "RAW",
+      requestBody: { values },
+    })
+  } catch (error) {
+    console.error(`[v0] Error appending to ${sheetName}:`, error)
+    throw error
+  }
 }
 
 async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: string[]) {
   try {
-    // Get existing sheets
     const response = await sheets.spreadsheets.get({
       spreadsheetId: sheetId,
     })
 
     const existingSheetsResponse = response.data.sheets || []
-    const existingSheets = existingSheetsResponse.map((sheet: any) => sheet.properties.title) || []
+    const existingSheets = existingSheetsResponse.map((sheet: any) => sheet.properties.title)
 
-    // Find missing sheets
     const missingSheets = sheetNames.filter((name) => !existingSheets.includes(name))
 
     if (missingSheets.length > 0) {
-      // Create missing sheets
       const requests = missingSheets.map((sheetName) => ({
         addSheet: {
           properties: {
@@ -220,119 +214,8 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
 
       console.log(`[v0] Created missing sheets: ${missingSheets.join(", ")}`)
     }
-
-    const headers = [
-      "Timestamp",
-      "Type",
-      "Full Name",
-      "Email",
-      "Mobile",
-      "City",
-      "State",
-      "College",
-      "Degree",
-      "Father's Name",
-      "Father's Occupation",
-      "Native Place",
-      "Vehicle",
-    ]
-
-    // For internship sheets, use full headers
-    const internshipHeaders = [
-      "Timestamp",
-      "Type",
-      "Full Name",
-      "Email",
-      "Mobile",
-      "City",
-      "State",
-      "College/Location",
-      "Year/Education",
-      "Degree",
-      "Specialization",
-      "CGPA/Percentage",
-      "Passing Year",
-      "Technologies",
-      "Programming Languages",
-      "Frameworks",
-      "Database",
-      "GitHub/Portfolio",
-      "Has Projects",
-      "Has Internship",
-      "Experience Duration",
-      "Mode",
-      "Hours Per Day",
-      "Duration",
-      "Why Select You",
-      "Ready To Learn",
-      "Father's Name",
-      "Father's Occupation",
-      "Native Place",
-      "Vehicle",
-      "Score",
-      "Status",
-    ]
-
-    // Fetch updated sheet list to get sheet IDs for filtering
-    const updatedResponse = await sheets.spreadsheets.get({
-      spreadsheetId: sheetId,
-    })
-    const allSheets = updatedResponse.data.sheets || []
-
-    const filterRequests: any[] = []
-
-    for (const sheetName of sheetNames) {
-      const headerCheck = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: `${sheetName}!A1:A1`,
-      })
-
-      if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
-        // Use appropriate headers based on sheet type
-        const sheetHeaders = sheetName === "WFH_Applications" ? headers : internshipHeaders
-        const range = sheetName === "WFH_Applications" ? `${sheetName}!A1:M1` : `${sheetName}!A1:AF1`
-        
-        // Add headers
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: sheetId,
-          range: range,
-          valueInputOption: "RAW",
-          requestBody: {
-            values: [sheetHeaders],
-          },
-        })
-
-        const sheet = allSheets.find((s: any) => s.properties.title === sheetName)
-        if (sheet) {
-          const sheetHeaders = sheetName === "WFH_Applications" ? headers : internshipHeaders
-          filterRequests.push({
-            setBasicFilter: {
-              filter: {
-                range: {
-                  sheetId: sheet.properties.sheetId,
-                  startRowIndex: 0,
-                  endRowIndex: 1,
-                  startColumnIndex: 0,
-                  endColumnIndex: sheetHeaders.length,
-                },
-              },
-            },
-          })
-        }
-      }
-    }
-
-    if (filterRequests.length > 0) {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: sheetId,
-        requestBody: {
-          requests: filterRequests,
-        },
-      })
-      console.log("[v0] Added headers and auto-filters to sheets")
-    }
   } catch (error) {
-    console.error("[v0] Error creating sheets:", error)
+    console.error("[v0] Error ensuring sheets exist:", error)
     throw error
   }
 }
@@ -348,46 +231,51 @@ export async function POST(request: NextRequest) {
       type: data.applicationType,
     })
 
-    // Handle WFH applications with simplified logic
     if (data.applicationType === "Work From Home") {
-      const timestamp = new Date().toISOString()
-      const wfhRowData = [
-        timestamp,
-        data.applicationType,
-        data.fullName,
-        data.email,
-        data.mobile,
-        data.city,
-        data.state,
-        data.college,
-        data.degree,
-        data.fatherName || "-",
-        data.fatherOccupation || "-",
-        data.nativePlace || "-",
-        data.personalVehicle || "-",
-      ]
+      try {
+        const timestamp = new Date().toISOString()
+        const sheetId = process.env.GOOGLE_SHEET_ID!
+        const sheets = await getGoogleSheetsClient()
 
-      const sheetId = process.env.GOOGLE_SHEET_ID!
-      const sheets = await getGoogleSheetsClient()
-      
-      // Ensure WFH_Applications sheet exists
-      await ensureSheetsExist(sheets, sheetId, ["WFH_Applications"])
-      
-      // Add to WFH sheet
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId,
-        range: "WFH_Applications!A:M",
-        valueInputOption: "RAW",
-        requestBody: { values: [wfhRowData] },
-      })
+        await ensureSheetsExist(sheets, sheetId, ["WFH_Applications"])
 
-      return NextResponse.json({
-        success: true,
-        message: `Thank you ${data.fullName}! Your work from home application has been received.`,
-      })
+        const wfhValues = [
+          [
+            timestamp,
+            data.applicationType,
+            data.fullName,
+            data.email,
+            data.mobile,
+            data.city,
+            data.state,
+            data.college,
+            data.degree,
+            data.fatherName || "-",
+            data.fatherOccupation || "-",
+            data.nativePlace || "-",
+            data.personalVehicle || "-",
+          ],
+        ]
+
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: sheetId,
+          range: "WFH_Applications!A:M",
+          valueInputOption: "RAW",
+          requestBody: { values: wfhValues },
+        })
+
+        console.log("[v0] === WFH Application Submitted Successfully ===")
+
+        return NextResponse.json({
+          success: true,
+          message: `Thank you ${data.fullName}! Your work from home application has been received.`,
+        })
+      } catch (error: any) {
+        console.error("[v0] WFH submission error:", error?.message)
+        throw error
+      }
     }
 
-    // Continue with internship logic
     const requiredEnvVars = {
       GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
       GOOGLE_PRIVATE_KEY_ID: process.env.GOOGLE_PRIVATE_KEY_ID,
@@ -412,17 +300,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] All environment variables present")
-    console.log("[v0] Sheet ID:", process.env.GOOGLE_SHEET_ID)
-
-    // Calculate score and status
     const score = calculateScore(data)
     const status = getStatus(data, score)
 
     console.log("[v0] Calculated score:", score)
     console.log("[v0] Determined status:", status)
 
-    // Prepare row data
     const timestamp = new Date().toISOString()
     const rowData = {
       timestamp,
@@ -459,21 +342,15 @@ export async function POST(request: NextRequest) {
       status,
     }
 
-    // Prepare sheets routing
     const sheetsToUpdate = ["All_Applications"]
 
-    if (data.applicationType === "Work From Home") {
-      sheetsToUpdate.push("WFH_Freelancers")
+    if (status === "Rejected") {
+      sheetsToUpdate.push("Rejected")
     } else {
-      // Internship logic
-      if (status === "Rejected") {
-        sheetsToUpdate.push("Rejected")
-      } else {
-        if (data.technologies && Array.isArray(data.technologies)) {
-          data.technologies.forEach((tech) => {
-            sheetsToUpdate.push(getTechSheetName(tech))
-          })
-        }
+      if (data.technologies && Array.isArray(data.technologies)) {
+        data.technologies.forEach((tech) => {
+          sheetsToUpdate.push(getTechSheetName(tech))
+        })
       }
     }
 
@@ -481,88 +358,41 @@ export async function POST(request: NextRequest) {
 
     const sheetId = process.env.GOOGLE_SHEET_ID!
 
-    try {
-      console.log("[v0] Creating Google Sheets client...")
-      const sheets = await getGoogleSheetsClient()
-      console.log("[v0] Google Sheets client created successfully")
+    const sheets = await getGoogleSheetsClient()
+    console.log("[v0] Google Sheets client created successfully")
 
-      console.log("[v0] Testing connection to Google Sheet...")
+    // Test connection
+    const testResponse = await sheets.spreadsheets.get({
+      spreadsheetId: sheetId,
+      fields: "properties.title",
+    })
+    console.log("[v0] ✓ Successfully connected to sheet:", testResponse.data.properties?.title)
+
+    await ensureSheetsExist(sheets, sheetId, sheetsToUpdate)
+    console.log("[v0] Sheets verified/created")
+
+    // Append to all relevant sheets
+    for (const sheetName of sheetsToUpdate) {
       try {
-        const testResponse = await sheets.spreadsheets.get({
-          spreadsheetId: sheetId,
-          fields: "properties.title",
-        })
-        console.log("[v0] ✓ Successfully connected to sheet:", testResponse.data.properties?.title)
-      } catch (testError: any) {
-        console.error("[v0] ✗ Failed to connect to sheet:", testError?.message)
-
-        if (testError?.code === 404) {
-          return NextResponse.json(
-            {
-              error: "Google Sheet not found",
-              details: "The sheet ID is invalid or the sheet has been deleted",
-              sheetId: sheetId,
-            },
-            { status: 404 },
-          )
-        }
-
-        if (testError?.code === 403) {
-          return NextResponse.json(
-            {
-              error: "Permission denied to access Google Sheet",
-              details: `Please share the sheet with: ${process.env.GOOGLE_CLIENT_EMAIL}`,
-              sheetId: sheetId,
-            },
-            { status: 403 },
-          )
-        }
-
-        throw testError
+        console.log(`[v0] Appending to sheet: ${sheetName}`)
+        await appendToGoogleSheets(sheetId, sheetName, rowData)
+        console.log(`[v0] ✓ Successfully added to sheet: ${sheetName}`)
+      } catch (error: any) {
+        console.error(`[v0] ✗ Error writing to sheet ${sheetName}:`, error?.message)
       }
-
-      console.log("[v0] Ensuring sheets exist...")
-      await ensureSheetsExist(sheets, sheetId, sheetsToUpdate)
-      console.log("[v0] Sheets verified/created")
-
-      // Append to all relevant sheets
-      for (const sheetName of sheetsToUpdate) {
-        try {
-          console.log(`[v0] Appending to sheet: ${sheetName}`)
-          await appendToGoogleSheets(sheetId, sheetName, rowData)
-          console.log(`[v0] ✓ Successfully added to sheet: ${sheetName}`)
-        } catch (error: any) {
-          console.error(`[v0] ✗ Error writing to sheet ${sheetName}:`, error?.message)
-          // Continue with other sheets even if one fails
-        }
-      }
-
-      console.log("[v0] === Application Submission Completed ===")
-
-      return NextResponse.json({
-        success: true,
-        message: `Thank you ${data.fullName}! Your application has been received and is ${status.toLowerCase()}.`,
-        score,
-        status,
-        sheetsUpdated: sheetsToUpdate,
-      })
-    } catch (sheetsError: any) {
-      console.error("[v0] Google Sheets API Error:", sheetsError)
-      console.error("[v0] Error code:", sheetsError?.code)
-      console.error("[v0] Error message:", sheetsError?.message)
-
-      return NextResponse.json(
-        {
-          error: "Failed to write to Google Sheets",
-          details: sheetsError?.message || "Unknown error",
-          code: sheetsError?.code,
-          hint: "Check server logs for detailed error information",
-        },
-        { status: 500 },
-      )
     }
+
+    console.log("[v0] === Application Submission Completed ===")
+
+    return NextResponse.json({
+      success: true,
+      message: `Thank you ${data.fullName}! Your application has been received and is ${status.toLowerCase()}.`,
+      score,
+      status,
+      sheetsUpdated: sheetsToUpdate,
+    })
   } catch (error: any) {
-    console.error("[v0] Fatal error processing application:", error)
+    console.error("[v0] Fatal error processing application:", error?.message || error)
 
     return NextResponse.json(
       {
