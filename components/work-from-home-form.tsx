@@ -22,6 +22,7 @@ interface WFHFormData {
   fatherOccupation: string
   nativePlace: string
   personalVehicle: string
+  referenceSource: string
 }
 
 export default function WorkFromHomeForm() {
@@ -39,6 +40,7 @@ export default function WorkFromHomeForm() {
     fatherOccupation: "",
     nativePlace: "",
     personalVehicle: "",
+    referenceSource: "",
   })
 
   const handleInputChange = (field: keyof WFHFormData, value: string) => {
@@ -48,10 +50,18 @@ export default function WorkFromHomeForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!formData.referenceSource) {
+      toast({
+        title: "Validation Error",
+        description: "Please select how you heard about us",
+        variant: "destructive",
+      })
+      return
+    }
+
     const payload = {
       ...formData,
       applicationType: "Work From Home" as const,
-      // Add required fields with default values for WFH
       currentYear: "-",
       specialization: "-",
       cgpaPercentage: "-",
@@ -102,6 +112,7 @@ export default function WorkFromHomeForm() {
           fatherOccupation: "",
           nativePlace: "",
           personalVehicle: "",
+          referenceSource: "",
         })
       } else {
         throw new Error(result.error || "Submission failed")
@@ -281,6 +292,48 @@ export default function WorkFromHomeForm() {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="no" id="vehicle-no" />
                   <Label htmlFor="vehicle-no">No</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Reference */}
+        <Card>
+          <CardHeader>
+            <CardTitle>How Did You Hear About Us?</CardTitle>
+            <CardDescription>Please tell us your source of reference</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <Label>Reference Source *</Label>
+              <RadioGroup
+                value={formData.referenceSource}
+                onValueChange={(value) => handleInputChange("referenceSource", value)}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="linkedin" id="ref-linkedin" />
+                  <Label htmlFor="ref-linkedin">LinkedIn</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="instagram" id="ref-instagram" />
+                  <Label htmlFor="ref-instagram">Instagram</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="facebook" id="ref-facebook" />
+                  <Label htmlFor="ref-facebook">Facebook</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="friend" id="ref-friend" />
+                  <Label htmlFor="ref-friend">Friend Referral</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="website" id="ref-website" />
+                  <Label htmlFor="ref-website">Company Website</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="ref-other" />
+                  <Label htmlFor="ref-other">Other</Label>
                 </div>
               </RadioGroup>
             </div>

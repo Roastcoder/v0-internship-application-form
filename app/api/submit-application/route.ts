@@ -31,6 +31,7 @@ interface ApplicationData {
   fatherOccupation?: string
   nativePlace?: string
   personalVehicle?: string
+  referenceSource?: string
 }
 
 // Calculate application score (0-100)
@@ -253,12 +254,13 @@ async function initializeWFHSheet(sheets: any, sheetId: string) {
           "Father's Occupation",
           "Native Place",
           "Personal Vehicle",
+          "Reference Source",
         ],
       ]
 
       await sheets.spreadsheets.values.update({
         spreadsheetId: sheetId,
-        range: "WFH_Applications!A1:M1",
+        range: "WFH_Applications!A1:N1",
         valueInputOption: "RAW",
         requestBody: { values: headers },
       })
@@ -272,7 +274,7 @@ async function initializeWFHSheet(sheets: any, sheetId: string) {
               sheetId: wfhSheetId,
               startRowIndex: 0,
               startColumnIndex: 0,
-              endColumnIndex: 13,
+              endColumnIndex: 14,
             },
           },
         },
@@ -287,6 +289,30 @@ async function initializeWFHSheet(sheets: any, sheetId: string) {
     }
   } catch (error) {
     console.error("[v0] Error initializing WFH sheet:", error)
+  }
+}
+
+async function checkDuplicate(sheets: any, sheetId: string, email: string, mobile: string): Promise<boolean> {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "WFH_Applications!D:E",
+    })
+
+    const values = response.data.values || []
+
+    // Skip header row, check if email or mobile already exists
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0] === email || values[i][1] === mobile) {
+        console.log("[v0] Duplicate found - Email or Mobile already exists")
+        return true
+      }
+    }
+
+    return false
+  } catch (error) {
+    console.error("[v0] Error checking duplicates:", error)
+    return false
   }
 }
 
@@ -310,6 +336,19 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Checking if WFH_Applications sheet exists...")
         await ensureSheetsExist(sheets, sheetId, ["WFH_Applications"])
 
+        // Check for duplicate before submission
+        const isDuplicate = await checkDuplicate(sheets, sheetId, data.email, data.mobile)
+        if (isDuplicate) {
+          console.log("[v0] Duplicate application rejected")
+          return NextResponse.json(
+            {
+              error: "Duplicate Application",
+              details: "An application with this email or phone number has already been submitted.",
+            },
+            { status: 400 },
+          )
+        }
+
         await initializeWFHSheet(sheets, sheetId)
 
         const wfhValues = [
@@ -327,13 +366,14 @@ export async function POST(request: NextRequest) {
             data.fatherOccupation || "-",
             data.nativePlace || "-",
             data.personalVehicle || "-",
+            data.referenceSource || "-",
           ],
         ]
 
         console.log("[v0] Appending WFH data to sheet...")
         await sheets.spreadsheets.values.append({
           spreadsheetId: sheetId,
-          range: "WFH_Applications!A:M",
+          range: "WFH_Applications!A:N",
           valueInputOption: "RAW",
           requestBody: { values: wfhValues },
         })
