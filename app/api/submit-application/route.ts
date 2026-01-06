@@ -231,51 +231,60 @@ async function initializeWFHSheet(sheets: any, sheetId: string) {
 
     console.log("[v0] WFH sheet ID:", wfhSheetId)
 
-    const headers = [
-      [
-        "Timestamp",
-        "Application Type",
-        "Full Name",
-        "Email",
-        "Mobile",
-        "City",
-        "State",
-        "College",
-        "Degree",
-        "Father's Name",
-        "Father's Occupation",
-        "Native Place",
-        "Personal Vehicle",
-      ],
-    ]
-
-    await sheets.spreadsheets.values.update({
+    const existingData = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
       range: "WFH_Applications!A1:M1",
-      valueInputOption: "RAW",
-      requestBody: { values: headers },
     })
 
-    const filterRequest = {
-      setBasicFilter: {
-        filter: {
-          range: {
-            sheetId: wfhSheetId,
-            startRowIndex: 0,
-            endRowIndex: 1,
-            startColumnIndex: 0,
-            endColumnIndex: 13,
-          },
-        },
-      },
+    // Only add headers if they don't exist
+    if (!existingData.data.values || existingData.data.values.length === 0) {
+      const headers = [
+        [
+          "Timestamp",
+          "Application Type",
+          "Full Name",
+          "Email",
+          "Mobile",
+          "City",
+          "State",
+          "College",
+          "Degree",
+          "Father's Name",
+          "Father's Occupation",
+          "Native Place",
+          "Personal Vehicle",
+        ],
+      ]
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: "WFH_Applications!A1:M1",
+        valueInputOption: "RAW",
+        requestBody: { values: headers },
+      })
     }
 
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId,
-      requestBody: { requests: [filterRequest] },
-    })
+    if (wfhSheetId !== undefined && !existingData.data.values) {
+      const filterRequest = {
+        setBasicFilter: {
+          filter: {
+            range: {
+              sheetId: wfhSheetId,
+              startRowIndex: 0,
+              startColumnIndex: 0,
+              endColumnIndex: 13,
+            },
+          },
+        },
+      }
 
-    console.log("[v0] ✓ WFH sheet initialized with headers and auto-filter")
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: { requests: [filterRequest] },
+      })
+
+      console.log("[v0] ✓ WFH sheet initialized with headers and auto-filter")
+    }
   } catch (error) {
     console.error("[v0] Error initializing WFH sheet:", error)
   }
