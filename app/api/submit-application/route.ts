@@ -220,6 +220,59 @@ async function ensureSheetsExist(sheets: any, sheetId: string, sheetNames: strin
   }
 }
 
+async function initializeWFHSheet(sheets: any, sheetId: string) {
+  try {
+    const headers = [
+      [
+        "Timestamp",
+        "Application Type",
+        "Full Name",
+        "Email",
+        "Mobile",
+        "City",
+        "State",
+        "College",
+        "Degree",
+        "Father's Name",
+        "Father's Occupation",
+        "Native Place",
+        "Personal Vehicle",
+      ],
+    ]
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range: "WFH_Applications!A1:M1",
+      valueInputOption: "RAW",
+      requestBody: { values: headers },
+    })
+
+    // Apply auto-filter to header row
+    const filterRequest = {
+      setBasicFilter: {
+        filter: {
+          range: {
+            sheetId: 0,
+            startRowIndex: 0,
+            endRowIndex: 1,
+            startColumnIndex: 0,
+            endColumnIndex: 13,
+          },
+        },
+      },
+    }
+
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: { requests: [filterRequest] },
+    })
+
+    console.log("[v0] ✓ WFH sheet initialized with headers and auto-filter")
+  } catch (error) {
+    console.error("[v0] Error initializing WFH sheet:", error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] === Application Submission Started ===")
@@ -237,7 +290,10 @@ export async function POST(request: NextRequest) {
         const sheetId = process.env.GOOGLE_SHEET_ID!
         const sheets = await getGoogleSheetsClient()
 
+        console.log("[v0] Checking if WFH_Applications sheet exists...")
         await ensureSheetsExist(sheets, sheetId, ["WFH_Applications"])
+
+        await initializeWFHSheet(sheets, sheetId)
 
         const wfhValues = [
           [
@@ -249,7 +305,7 @@ export async function POST(request: NextRequest) {
             data.city,
             data.state,
             data.college,
-            data.degree,
+            data.degree || "-",
             data.fatherName || "-",
             data.fatherOccupation || "-",
             data.nativePlace || "-",
@@ -257,6 +313,7 @@ export async function POST(request: NextRequest) {
           ],
         ]
 
+        console.log("[v0] Appending WFH data to sheet...")
         await sheets.spreadsheets.values.append({
           spreadsheetId: sheetId,
           range: "WFH_Applications!A:M",
@@ -271,8 +328,14 @@ export async function POST(request: NextRequest) {
           message: `Thank you ${data.fullName}! Your work from home application has been received.`,
         })
       } catch (error: any) {
-        console.error("[v0] WFH submission error:", error?.message)
-        throw error
+        console.error("[v0] WFH submission error:", error?.message || error)
+        return NextResponse.json(
+          {
+            error: "Failed to submit WFH application",
+            details: error?.message || "Unknown error",
+          },
+          { status: 500 },
+        )
       }
     }
 
